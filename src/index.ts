@@ -23,13 +23,19 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
-app.get('/health', (_req, res) => res.json({
-  status: 'ok',
-  version: '1.0.0',
-  uptime: process.uptime(),
-  timestamp: new Date().toISOString(),
-  environment: process.env.NODE_ENV || 'development',
-}))
+app.get('/health', async (_req, res) => {
+  const { getStellarNetworkHealth } = await import('./utils/stellar-health.js')
+  const stellar = await getStellarNetworkHealth()
+
+  res.json({
+    status: stellar.healthy ? 'ok' : 'degraded',
+    version: '1.0.0',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    stellar,
+  })
+})
 
 app.use('/api/auth', authRoutes)
 app.use('/api/tasks', taskRoutes)
